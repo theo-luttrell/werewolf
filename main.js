@@ -1,6 +1,7 @@
 import './style.css';
-import { db } from './firebase.js';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { db, auth } from './firebase.js';
+import { doc, collection, onSnapshot, setDoc } from 'firebase/firestore';
+import { signInAnonymously } from 'firebase/auth';
 import { views } from './src/views.js';
 
 const appDiv = document.getElementById('app');
@@ -11,8 +12,12 @@ let playerId = sessionStorage.getItem('ww_playerId') || '';
 let currentRole = '';
 let isAlive = true;
 
-// Utility to generate a simple ID
-const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
+// Shared Game State
+let gameState = {
+  state: 'lobby',
+  players: {},
+  actions: {}
+};
 
 // Rendering utility
 function render(html, theme = '') {
@@ -63,8 +68,11 @@ function attachDropdown(onSelect) {
 
 // ----------------- State Machine -----------------
 
-let roomRef = null;
-let unsubscribe = null;
+let roomUnsub = null;
+let playersUnsub = null;
+let privateUnsub = null;
+let werewolfUnsub = null;
+let deadUnsub = null;
 
 function joinRoom(code) {
   roomCode = code.toUpperCase();
@@ -97,34 +105,73 @@ function showNickname() {
   btn.onclick = async () => {
     const name = input.value.trim();
     if (name) {
-      playerId = generateId();
-      sessionStorage.setItem('ww_playerId', playerId);
-      
-      const rRef = doc(db, "rooms", roomCode);
-      await setDoc(rRef, {
-        players: {
-          [playerId]: { name, isAlive: true, role: 'unassigned' }
-        }
-      }, { merge: true });
-      listenToRoom();
+      try {
+        await signInAnonymously(auth);
+        playerId = auth.currentUser.uid;
+        sessionStorage.setItem('ww_playerId', playerId);
+        
+        const rRef = doc(db, "rooms", roomCode, "players", playerId);
+        await setDoc(rRef, {
+          name, isAlive: true
+        }, { merge: true });
+
+        const privRef = doc(db, "rooms", roomCode, "private", playerId);
+        await setDoc(privRef, {
+          role: 'unassigned', target: null
+        }, { merge: true });
+
+        listenToRoom();
+      } catch (err) {
+        console.error("Auth error:", err);
+      }
     }
   };
 }
 
 function listenToRoom() {
-  if (unsubscribe) unsubscribe();
-  roomRef = doc(db, "rooms", roomCode);
-  unsubscribe = onSnapshot(roomRef, (snapshot) => {
-    const data = snapshot.data();
-    if (!data) return;
+  if (roomUnsub) roomUnsub();
+  if (playersUnsub) playersUnsub();
+  if (privateUnsub) privateUnsub();
 
-    const me = data.players && data.players[playerId];
-    if (me) {
-      currentRole = me.role;
-      isAlive = me.isAlive;
+  // 1. Listen to public room state
+  roomUnsub = onSnapshot(doc(db, "rooms", roomCode), (snap) => {
+    const data = snap.data();
+    if (data) {
+      Object.assign(gameState, data);
+      handleState(gameState);
     }
+  });
 
-    handleState(data);
+  // 2. Listen to public players list
+  playersUnsub = onSnapshot(collection(db, "rooms", roomCode, "players"), (snap) => {
+    gameState.players = {};
+    snap.forEach(docSnap => {
+      gameState.players[docSnap.id] = docSnap.data();
+    });
+    if (gameState.players[playerId]) {
+      isAlive = gameState.players[playerId].isAlive;
+    }
+    handleState(gameState);
+  });
+
+  // 3. Listen to our own private data
+  privateUnsub = onSnapshot(doc(db, "rooms", roomCode, "private", playerId), (snap) => {
+    const data = snap.data();
+    if (data) {
+      currentRole = data.role;
+      
+      // Werewolf Vision Sync
+      if (currentRole === 'werewolf' && !werewolfUnsub) {
+        werewolfUnsub = onSnapshot(doc(db, "rooms", roomCode, "werewolfData", "actions"), (wSnap) => {
+          const wData = wSnap.data();
+          if (wData) {
+            gameState.actions = { ...gameState.actions, ...wData };
+          }
+          handleState(gameState);
+        });
+      }
+    }
+    handleState(gameState);
   });
 }
 
@@ -136,10 +183,25 @@ function handleState(data) {
      hasActed = false;
   }
 
-  if (data.state === lastState && data.state !== 'day' && data.state !== 'discussion' && data.state !== 'voting') {
-     // day/discussion/voting might have data updates like events or timer
-     // but we can optimize later.
+  // Handle Dead Spectator Vision Sync
+  if (!isAlive && !deadUnsub && data.state !== 'lobby') {
+    deadUnsub = onSnapshot(collection(db, "rooms", roomCode, "private"), (pSnap) => {
+      pSnap.forEach(pDoc => {
+        if (gameState.players[pDoc.id]) {
+          gameState.players[pDoc.id].role = pDoc.data().role;
+        }
+        if (pDoc.data().target) {
+          gameState.actions[pDoc.id] = { target: pDoc.data().target };
+        }
+      });
+      // Force a re-render of the dead spectator view
+      if (data.state !== 'end') {
+        const playersArr = Object.entries(gameState.players || {}).map(([id, p]) => ({id, ...p}));
+        render(views.deadSpectator(playersArr, gameState.actions), 'theme-day');
+      }
+    });
   }
+
   lastState = data.state;
 
   if (data.state === 'lobby') {
@@ -149,8 +211,8 @@ function handleState(data) {
     render(views.reveal(currentRole), `theme-${currentRole}`);
   } 
   else if (!isAlive && data.state !== 'end') {
-    const playersArr = Object.entries(data.players || {}).map(([id, p]) => ({id, ...p}));
-    render(views.deadSpectator(playersArr, data.actions), 'theme-day');
+    const playersArr = Object.entries(gameState.players || {}).map(([id, p]) => ({id, ...p}));
+    render(views.deadSpectator(playersArr, gameState.actions), 'theme-day');
   }
   else if (data.state === 'night') {
     if (hasActed) {
@@ -158,9 +220,9 @@ function handleState(data) {
       return;
     }
 
-    const playersArr = Object.entries(data.players || {}).map(([id, p]) => ({id, ...p}));
+    const playersArr = Object.entries(gameState.players || {}).map(([id, p]) => ({id, ...p}));
     if (currentRole === 'werewolf') {
-      render(views.nightWerewolf(playersArr, playerId, data.actions), 'theme-werewolf');
+      render(views.nightWerewolf(playersArr, playerId, gameState.actions), 'theme-werewolf');
       attachDropdown((targetId) => submitAction(targetId));
     } else if (currentRole === 'doctor') {
       render(views.nightDoctor(playersArr, playerId), 'theme-doctor');
@@ -182,7 +244,7 @@ function handleState(data) {
       return;
     }
 
-    const playersArr = Object.entries(data.players || {}).map(([id, p]) => ({id, ...p}));
+    const playersArr = Object.entries(gameState.players || {}).map(([id, p]) => ({id, ...p}));
     render(views.voting(playersArr, playerId), 'theme-day');
     attachDropdown((targetId) => submitAction(targetId));
   }
@@ -190,7 +252,7 @@ function handleState(data) {
     render(views.voteSummary(data.voteResult || ''), 'theme-day');
   }
   else if (data.state === 'end') {
-    render(views.end(data.winner, data.winText), `theme-${data.winner}`); // theme maps to werewolf or villager
+    render(views.end(data.winner, data.winText), `theme-${data.winner}`);
   }
 }
 
@@ -199,11 +261,9 @@ function submitAction(targetId) {
   if (lastState === 'night') render(views.actionWaiting(), `theme-${currentRole}`);
   if (lastState === 'voting') render(views.actionWaiting(), 'theme-day');
 
-  const rRef = doc(db, "rooms", roomCode);
-  setDoc(rRef, {
-    actions: {
-      [playerId]: { target: targetId }
-    }
+  const privRef = doc(db, "rooms", roomCode, "private", playerId);
+  setDoc(privRef, {
+    target: targetId
   }, { merge: true });
 }
 
@@ -248,8 +308,12 @@ function startTimer(duration) {
 }
 
 // Entry
-if (roomCode && playerId) {
-  listenToRoom();
-} else {
-  showLogin();
-}
+// We can't immediately re-listen if they refresh without auth syncing.
+// Firebase auth syncs asynchronously.
+auth.onAuthStateChanged((user) => {
+  if (user && roomCode && playerId === user.uid) {
+    listenToRoom();
+  } else if (!user) {
+    showLogin();
+  }
+});

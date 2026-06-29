@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /rooms/{roomId} {
+      // Anyone can read public room state (phase, timer)
+      allow read: if true;
+      // Anyone can create a room or update state (we can restrict this later, but for now we need it open for testing)
+      allow write: if true;
+
+      match /players/{uid} {
+        // Anyone can see the player list and who is alive
+        allow read: if true;
+        // Players can only join/update their own public profile
+        allow write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /private/{uid} {
+        // Players can read/write their own secret roles and actions
+        // OR they can read everyone's secrets if they are dead (spectator mode)
+        allow read: if request.auth != null && (
+          request.auth.uid == uid || 
+          get(/databases/$(database)/documents/rooms/$(roomId)/players/$(request.auth.uid)).data.isAlive == false
+        );
+        allow write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /werewolfData/{docId} {
+        // Only werewolves can read pack actions
+        allow read: if request.auth != null && 
+          get(/databases/$(database)/documents/rooms/$(roomId)/private/$(request.auth.uid)).data.role == 'werewolf';
+        // Only the Admin CLI writes here
+        allow write: if false; 
+      }
+    }
+  }
+}

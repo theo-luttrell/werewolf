@@ -1,54 +1,88 @@
-import { db } from '../firebase.js';
-import { doc, setDoc, updateDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import admin from 'firebase-admin';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const serviceAccount = JSON.parse(fs.readFileSync(path.join(__dirname, '../serviceAccountKey.json'), 'utf-8'));
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+}
+const db = admin.firestore();
 
 export class GameManager {
   constructor() {
-    this.roomCode = '';
-    this.dayNumber = 0;
-    this.players = {};
-    this.actions = {};
-    this.state = 'setup'; // local state for host
+    this.roomCode = null;
+    this.players = {}; // stores public {name, isAlive} + private {role}
+    this.actions = {}; // mapped by playerId -> {target}
+    this.state = 'setup'; 
     this.onActionSubmitted = null;
   }
 
   generateRoomCode() {
-    const chars = '23456789ABCDEFGHJKLMNPRSTUVWXYZ';
-    let code = '';
-    for (let i = 0; i < 4; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
+    this.roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return this.roomCode;
   }
 
   async openGame(onPlayerJoin) {
-    this.roomCode = this.generateRoomCode();
-    await setDoc(doc(db, "rooms", this.roomCode), {
+    this.generateRoomCode();
+    await db.collection("rooms").doc(this.roomCode).set({
       state: 'lobby',
-      dayNumber: 0,
-      players: {},
-      actions: {},
-      events: []
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    onSnapshot(doc(db, "rooms", this.roomCode), (snap) => {
-      const data = snap.data();
-      if (!data) return;
-      
-      const newPlayers = Object.keys(data.players || {}).length > Object.keys(this.players).length;
-      this.players = data.players || {};
-      if (newPlayers && onPlayerJoin) {
+    // Listen to players subcollection
+    db.collection("rooms").doc(this.roomCode).collection("players").onSnapshot((snap) => {
+      let newJoin = false;
+      snap.forEach(docSnap => {
+        if (!this.players[docSnap.id]) {
+          this.players[docSnap.id] = docSnap.data();
+          newJoin = true;
+        } else {
+          // Merge updates (e.g. isAlive)
+          this.players[docSnap.id] = { ...this.players[docSnap.id], ...docSnap.data() };
+        }
+      });
+      if (newJoin && onPlayerJoin) {
         onPlayerJoin(this.players);
       }
-      
-      const incomingActions = data.actions || {};
-      if (this.onActionSubmitted && Object.keys(incomingActions).length > Object.keys(this.actions).length) {
-         for (const playerId in incomingActions) {
-           if (!this.actions[playerId]) {
-             this.onActionSubmitted(this.players[playerId]?.role || 'unknown');
-           }
-         }
+    });
+
+    // Listen to private subcollection for actions and roles
+    db.collection("rooms").doc(this.roomCode).collection("private").onSnapshot(async (snap) => {
+      let newActionCount = 0;
+      snap.forEach(docSnap => {
+        const pId = docSnap.id;
+        const pData = docSnap.data();
+        if (this.players[pId]) {
+          this.players[pId].role = pData.role;
+        }
+        
+        if (pData.target) {
+          if (!this.actions[pId] || this.actions[pId].target !== pData.target) {
+            newActionCount++;
+            if (this.onActionSubmitted) {
+              this.onActionSubmitted(pData.role || 'unknown');
+            }
+          }
+          this.actions[pId] = { target: pData.target };
+        }
+      });
+
+      // Sync werewolf actions
+      if (newActionCount > 0) {
+        let werewolfActions = {};
+        for (const [id, act] of Object.entries(this.actions)) {
+          if (this.players[id] && this.players[id].role === 'werewolf') {
+            werewolfActions[id] = act;
+          }
+        }
+        await db.collection("rooms").doc(this.roomCode).collection("werewolfData").doc("actions").set(werewolfActions);
       }
-      this.actions = incomingActions;
     });
 
     this.state = 'lobby';
@@ -73,30 +107,44 @@ export class GameManager {
     // Shuffle
     roles.sort(() => Math.random() - 0.5);
 
+    const batch = db.batch();
+
     playerIds.forEach((id, i) => {
       this.players[id].role = roles[i];
+      const privRef = db.collection("rooms").doc(this.roomCode).collection("private").doc(id);
+      batch.update(privRef, { role: roles[i], target: null });
     });
 
-    await updateDoc(doc(db, "rooms", this.roomCode), {
-      players: this.players,
-      state: 'reveal'
-    });
+    const roomRef = db.collection("rooms").doc(this.roomCode);
+    batch.update(roomRef, { state: 'reveal' });
+
+    await batch.commit();
     this.state = 'reveal';
   }
 
   async startNight() {
-    this.dayNumber++;
-    await updateDoc(doc(db, "rooms", this.roomCode), {
-      state: 'night',
-      dayNumber: this.dayNumber,
-      actions: {}
-    });
-    this.actions = {};
+    this.actions = {}; // Clear memory actions
+    const batch = db.batch();
+    
+    // Clear private targets
+    for (const id of Object.keys(this.players)) {
+      const privRef = db.collection("rooms").doc(this.roomCode).collection("private").doc(id);
+      batch.update(privRef, { target: null });
+    }
+    
+    // Clear werewolf sync
+    const wolfRef = db.collection("rooms").doc(this.roomCode).collection("werewolfData").doc("actions");
+    batch.set(wolfRef, {});
+
+    // Update room
+    const roomRef = db.collection("rooms").doc(this.roomCode);
+    batch.update(roomRef, { state: 'night' });
+
+    await batch.commit();
     this.state = 'night';
   }
 
   async endNight() {
-    // Resolve actions
     let werewolfTargets = [];
     let doctorTarget = null;
 
@@ -117,98 +165,108 @@ export class GameManager {
     const events = [];
 
     if (doctorTarget) {
-      const p = this.players[doctorTarget];
-      if (p) events.push(`The <span class="highlight-save">Doctor</span> saved <span class="highlight-save">${p.name}</span>.`);
+      const docName = this.players[doctorTarget]?.name;
+      events.push(`The Doctor saved <span class="highlight-save">${docName}</span>.`);
     }
 
     if (werewolfTarget) {
-      if (werewolfTarget !== doctorTarget) {
-        const p = this.players[werewolfTarget];
-        if (p) {
-          events.push(`<span class="highlight-kill">${p.name}</span> was torn apart by the <span class="highlight-kill">werewolves</span>.`);
-          this.players[werewolfTarget].isAlive = false;
-        }
+      if (werewolfTarget === doctorTarget) {
+        events.push(`The Werewolves attacked, but their target was saved by the Doctor!`);
       } else {
-         // Saved by doctor!
+        const wolfName = this.players[werewolfTarget]?.name;
+        events.push(`The Werewolves killed <span class="highlight-kill">${wolfName}</span>.`);
+        this.players[werewolfTarget].isAlive = false;
+        
+        await db.collection("rooms").doc(this.roomCode).collection("players").doc(werewolfTarget).update({
+           isAlive: false
+        });
       }
+    } else {
+      events.push(`The Werewolves were quiet...`);
     }
 
-    await updateDoc(doc(db, "rooms", this.roomCode), {
-      players: this.players,
-      events: events,
-      state: 'day'
+    await db.collection("rooms").doc(this.roomCode).update({
+      state: 'day',
+      events: events
     });
     this.state = 'day';
   }
 
-  async endDiscussion() {
-    await updateDoc(doc(db, "rooms", this.roomCode), {
-      state: 'voting',
-      actions: {}
+  async startDiscussion(seconds = 60) {
+    await db.collection("rooms").doc(this.roomCode).update({
+      state: 'discussion',
+      timer: seconds
     });
+    this.state = 'discussion';
+  }
+
+  async startVoting() {
     this.actions = {};
+    const batch = db.batch();
+    
+    // Clear private targets
+    for (const id of Object.keys(this.players)) {
+      const privRef = db.collection("rooms").doc(this.roomCode).collection("private").doc(id);
+      batch.update(privRef, { target: null });
+    }
+
+    // Update room
+    const roomRef = db.collection("rooms").doc(this.roomCode);
+    batch.update(roomRef, { state: 'voting' });
+
+    await batch.commit();
     this.state = 'voting';
   }
 
   async endVoting() {
-    // Tally votes
     const votes = {};
     Object.values(this.actions).forEach(action => {
-      votes[action.target] = (votes[action.target] || 0) + 1;
+      if (action.target) {
+        votes[action.target] = (votes[action.target] || 0) + 1;
+      }
     });
 
+    let exiled = null;
     let maxVotes = 0;
-    let exiledId = null;
     let tie = false;
 
-    Object.entries(votes).forEach(([targetId, count]) => {
+    for (const [id, count] of Object.entries(votes)) {
       if (count > maxVotes) {
         maxVotes = count;
-        exiledId = targetId;
+        exiled = id;
         tie = false;
       } else if (count === maxVotes) {
         tie = true;
       }
-    });
-
-    let resultMsg = '';
-
-    if (tie || !exiledId) {
-      resultMsg = 'The town was divided. No one was exiled today.';
-    } else {
-      const p = this.players[exiledId];
-      resultMsg = `<span class="highlight-kill">${p.name}</span> was exiled from the village.`;
-      this.players[exiledId].isAlive = false;
     }
-    
-    await updateDoc(doc(db, "rooms", this.roomCode), {
-      players: this.players,
-      voteResult: resultMsg,
-      state: 'vote_summary'
+
+    let resultMsg = "The village was peaceful; no one voted.";
+    if (maxVotes > 0) {
+      if (tie) {
+        resultMsg = "The village was tied. No one is exiled today.";
+      } else {
+        const name = this.players[exiled]?.name;
+        resultMsg = `The village exiled <span class="highlight-kill">${name}</span> with ${maxVotes} votes.`;
+        this.players[exiled].isAlive = false;
+        await db.collection("rooms").doc(this.roomCode).collection("players").doc(exiled).update({
+           isAlive: false
+        });
+      }
+    }
+
+    await db.collection("rooms").doc(this.roomCode).update({
+      state: 'vote_summary',
+      voteResult: resultMsg
     });
     this.state = 'vote_summary';
   }
 
-  async checkWinCondition() {
-    const alivePlayers = Object.values(this.players).filter(p => p.isAlive);
-    const werewolves = alivePlayers.filter(p => p.role === 'werewolf').length;
-    const villagersAndDoctors = alivePlayers.length - werewolves;
-
-    if (werewolves === 0) {
-       await updateDoc(doc(db, "rooms", this.roomCode), {
-         state: 'end',
-         winner: 'villager',
-         winText: 'All werewolves have been eliminated. The village is safe!'
-       });
-       return true;
-    } else if (werewolves >= villagersAndDoctors) {
-       await updateDoc(doc(db, "rooms", this.roomCode), {
-         state: 'end',
-         winner: 'werewolf',
-         winText: 'The werewolves have overrun the village!'
-       });
-       return true;
-    }
-    return false;
+  async endGame(winner, text) {
+    await db.collection("rooms").doc(this.roomCode).update({
+      state: 'end',
+      winner: winner, // 'werewolf' or 'villager'
+      winText: text
+    });
+    this.state = 'end';
   }
 }

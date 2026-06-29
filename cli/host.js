@@ -72,14 +72,12 @@ async function main() {
         }]);
         
         if (startDisc) {
-           const { updateDoc, doc } = await import('firebase/firestore');
-           const { db } = await import('../firebase.js');
-           await updateDoc(doc(db, `rooms/${gm.roomCode}`), { state: 'discussion', timer: 60 });
+           await gm.startDiscussion(60);
            console.log(chalk.green("Discussion started."));
         }
       }
       else if (cmd === 'disc end') {
-        await gm.endDiscussion();
+        await gm.startVoting();
         console.log(chalk.cyan("Discussion ended. Voting has started."));
       }
       else if (cmd === 'vote end') {

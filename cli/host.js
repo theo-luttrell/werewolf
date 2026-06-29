@@ -107,6 +107,16 @@ async function main() {
         await gm.kickPlayers();
         console.log(chalk.yellow("All players have been kicked to the login screen."));
       }
+      else if (cmd.startsWith('state alive ')) {
+        const name = cmd.replace('state alive ', '').trim();
+        await gm.setPlayerState(name, true);
+        console.log(chalk.green(`${name} is now alive.`));
+      }
+      else if (cmd.startsWith('state dead ')) {
+        const name = cmd.replace('state dead ', '').trim();
+        await gm.setPlayerState(name, false);
+        console.log(chalk.red(`${name} is now dead.`));
+      }
       else if (cmd === 'exit' || cmd === 'quit') {
         console.log("Exiting host environment.");
         process.exit(0);

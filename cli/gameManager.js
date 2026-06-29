@@ -321,6 +321,19 @@ export class GameManager {
       state: 'kicked'
     });
   }
+
+  async setPlayerState(playerName, isAlive) {
+    const playerEntry = Object.entries(this.players).find(([_, p]) => p.name.toLowerCase() === playerName.toLowerCase());
+    if (!playerEntry) {
+      console.log(`Player ${playerName} not found.`);
+      return;
+    }
+    const [playerId] = playerEntry;
+    await db.collection("rooms").doc(this.roomCode).collection("players").doc(playerId).update({
+      isAlive
+    });
+    this.players[playerId].isAlive = isAlive;
+  }
 }
 
 export default GameManager;

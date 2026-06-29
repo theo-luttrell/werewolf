@@ -222,6 +222,12 @@ function handleState(data) {
     render(views.deadSpectator(playersArr, gameState.actions), 'theme-day');
   }
   else if (data.state === 'night') {
+    if (currentRole === 'seer' && gameState.privateData?.seerResult) {
+      const resultPlayerName = gameState.players[gameState.privateData.seerResult.id]?.name || 'Unknown';
+      render(views.nightSeerResult(resultPlayerName, gameState.privateData.seerResult.role), 'theme-seer');
+      return;
+    }
+
     if (hasActed) {
       render(views.actionWaiting(), `theme-${currentRole}`);
       return;
@@ -239,15 +245,8 @@ function handleState(data) {
       render(views.nightDoctor(playersArr, playerId), 'theme-doctor');
       attachDropdown((targetId) => submitAction(targetId));
     } else if (currentRole === 'seer') {
-      if (gameState.privateData?.seerResult) {
-        const resultPlayerName = gameState.players[gameState.privateData.seerResult.id]?.name || 'Unknown';
-        render(views.nightSeerResult(resultPlayerName, gameState.privateData.seerResult.role), 'theme-seer');
-      } else if (hasActed) {
-        render(views.actionWaiting(), 'theme-seer');
-      } else {
-        render(views.nightSeer(playersArr, playerId), 'theme-seer');
-        attachDropdown((targetId) => submitAction(targetId));
-      }
+      render(views.nightSeer(playersArr, playerId), 'theme-seer');
+      attachDropdown((targetId) => submitAction(targetId));
     } else {
       render(views.nightVillager(), 'theme-villager');
     }

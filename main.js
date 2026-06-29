@@ -3,8 +3,17 @@ import { db, auth } from './firebase.js';
 import { doc, collection, onSnapshot, setDoc } from 'firebase/firestore';
 import { signInAnonymously, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { views } from './src/views.js';
+import { audio } from './src/audio.js';
 
 const appDiv = document.getElementById('app');
+
+// Global audio unlock and click SFX
+document.addEventListener('click', (e) => {
+  audio.init();
+  if (e.target.closest('button') || e.target.closest('.option-item') || e.target.closest('.select-trigger')) {
+    audio.playSFX('click');
+  }
+});
 
 // Local client state
 let roomCode = sessionStorage.getItem('ww_roomCode') || '';
@@ -194,6 +203,22 @@ function handleState(data) {
      if (data.state === 'night' || data.state === 'voting') {
          gameState.actions = {}; // Clear action history on new phase
      }
+     
+     if (data.state === 'lobby' || data.state === 'reveal' || data.state === 'setup') {
+         audio.playBGM('lobby');
+     } else if (data.state === 'night') {
+         audio.playBGM('night');
+     } else if (data.state === 'day' || data.state === 'discussion' || data.state === 'voting' || data.state === 'vote_summary') {
+         audio.playBGM('day');
+     } else if (data.state === 'end') {
+         audio.stopAll();
+         const isWolfTeam = currentRole === 'werewolf' || currentRole === 'minion';
+         if ((data.winner === 'werewolf' && isWolfTeam) || (data.winner === 'villager' && !isWolfTeam)) {
+             audio.playSFX('win');
+         } else {
+             audio.playSFX('lose');
+         }
+     }
   }
 
   // Handle Dead Spectator Vision Sync
@@ -327,11 +352,15 @@ function startTimer(duration) {
     if (timeLeft <= 10 && timeLeft > 5) {
       display.classList.add('warning');
       circle.classList.add('warning');
-    } else if (timeLeft <= 5) {
+    } else if (timeLeft <= 5 && timeLeft > 0) {
       display.classList.remove('warning');
       circle.classList.remove('warning');
       display.classList.add('critical', 'pulse-critical');
       circle.classList.add('critical');
+    }
+
+    if (timeLeft <= 10 && timeLeft > 0) {
+      audio.playSFX('tick');
     }
 
     if (timeLeft === 0) {

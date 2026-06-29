@@ -313,7 +313,7 @@ function startTimer(duration) {
 auth.onAuthStateChanged((user) => {
   if (user && roomCode && playerId === user.uid) {
     listenToRoom();
-  } else if (!user) {
+  } else {
     showLogin();
   }
 });

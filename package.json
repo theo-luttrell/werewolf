@@ -1,0 +1,19 @@
+{
+  "name": "werewolf",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^8.1.0"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "firebase": "^12.15.0",
+    "inquirer": "^14.0.2"
+  }
+}

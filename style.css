@@ -1,0 +1,460 @@
+/* Base Theme */
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  background-color: #ffffff;
+  transition: background-color 0.5s ease;
+  overflow: hidden;
+  color: #333333;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Common Text */
+.reveal-text {
+  font-size: 28px;
+  font-weight: normal;
+  margin: 0;
+  transition: color 0.5s ease;
+}
+
+.role-text {
+  display: block;
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin-top: 15px;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.role-text.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Login PIN */
+.pin-container {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 40px;
+}
+.pin-box {
+  width: 50px;
+  height: 60px;
+  font-size: 28px;
+  text-align: center;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  text-transform: uppercase;
+}
+.pin-box:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+}
+.pin-box::-webkit-outer-spin-button,
+.pin-box::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Nickname */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 40px;
+}
+.nickname-input {
+  width: 236px;
+  height: 50px;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.nickname-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+}
+.nickname-input::placeholder {
+  color: #aaa;
+  font-weight: normal;
+  font-size: 16px;
+}
+.submit-btn {
+  width: 240px;
+  height: 46px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+.submit-btn:hover {
+  background-color: #0056b3;
+}
+.submit-btn:active {
+  transform: scale(0.98);
+}
+
+/* Wait Spinner */
+.wait-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+.wait-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333333;
+  margin: 0;
+}
+.wait-sub {
+  font-size: 16px;
+  color: #666666;
+  margin: 0;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+/* THEMES */
+body.theme-werewolf { background-color: #0b0202; color: #e2e8f0; }
+body.theme-werewolf .reveal-text { color: #8a8a8a; }
+body.theme-werewolf .role-text { color: #dc3545; }
+
+body.theme-villager { background-color: #0b1325; color: #e2e8f0; }
+body.theme-villager .reveal-text { color: #b0c4de; }
+body.theme-villager .role-text { color: #ffd700; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+
+body.theme-doctor { background-color: #0d1b1e; color: #e2e8f0; }
+body.theme-doctor .reveal-text { color: #a3b899; }
+body.theme-doctor .role-text { color: #00f0ff; text-shadow: 0 0 15px rgba(0, 240, 255, 0.5); }
+
+/* Night Phase UI */
+.night-container {
+  text-align: center;
+  width: 100%;
+  max-width: 320px;
+  padding: 20px;
+}
+.moon-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+body.theme-werewolf .moon-icon { color: #fef08a; text-shadow: 0 0 20px rgba(254, 240, 138, 0.3); }
+body.theme-doctor .moon-icon { color: #00f0ff; text-shadow: 0 0 20px rgba(0, 240, 255, 0.3); }
+body.theme-villager .moon-icon { color: #ffd700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
+
+.night-title {
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin: 0 0 5px 0;
+  color: #ffffff;
+}
+.night-subtitle {
+  font-size: 15px;
+  color: #94a3b8;
+  margin: 0 0 30px 0;
+}
+
+/* Custom Select Dropdown */
+.custom-select-wrapper {
+  position: relative;
+  user-select: none;
+  width: 100%;
+}
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 50px;
+  font-size: 16px;
+  background-color: #111827;
+  border: 2px solid #374151;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #f3f4f6;
+}
+.select-trigger:hover {
+  border-color: #4b5563;
+}
+body.theme-werewolf .select-trigger.open {
+  border-color: #dc3545;
+  box-shadow: 0 0 10px rgba(220, 53, 69, 0.2);
+}
+body.theme-doctor .select-trigger.open {
+  border-color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+body.theme-villager .select-trigger.open {
+  border-color: #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+.arrow-icon {
+  border: solid #9ca3af;
+  border-width: 0 2px 2px 0;
+  display: inline-block;
+  padding: 4px;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+.select-trigger.open .arrow-icon {
+  transform: rotate(-135deg);
+  margin-top: 4px;
+}
+.select-options {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background-color: #111827;
+  border: 2px solid #374151;
+  border-radius: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 100;
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  text-align: left;
+}
+.select-options.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.option-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 15px;
+  border-bottom: 1px solid #1f2937;
+  transition: background-color 0.15s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.option-item:last-child {
+  border-bottom: none;
+}
+.option-item:hover {
+  background-color: #1f2937;
+}
+.option-item.disabled {
+  color: #4b5563 !important;
+  background-color: #0b0f17 !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.status-badge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+.status-badge.werewolf {
+  background-color: rgba(220, 53, 69, 0.15);
+  color: #ef4444;
+}
+.status-badge.dead {
+  background-color: rgba(156, 163, 175, 0.15);
+  color: #9ca3af;
+}
+
+/* Day Phase Summary / Discussion */
+body.theme-day {
+  background-color: #f8fafc;
+  color: #1e293b;
+  animation: morningSunrise 2.5s forwards cubic-bezier(0.25, 1, 0.5, 1);
+}
+.summary-container {
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+}
+.sun-icon {
+  font-size: 48px;
+  color: #ea580c;
+  margin-bottom: 24px;
+  text-shadow: 0 0 25px rgba(234, 88, 12, 0.2);
+  opacity: 0;
+  animation: fadeInUp 0.8s forwards ease-out;
+}
+.summary-title {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  margin: 0 0 35px 0;
+  color: #0f172a;
+  opacity: 0;
+  animation: fadeInUp 0.8s forwards ease-out;
+  animation-delay: 0.4s;
+}
+.summary-line {
+  font-size: 18px;
+  line-height: 1.8;
+  margin: 0 0 16px 0;
+  color: #334155;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 1s forwards ease-out;
+}
+.highlight-save { color: #0284c7; font-weight: bold; }
+.highlight-kill { color: #dc2626; font-weight: bold; }
+
+@keyframes morningSunrise {
+  0% { background-color: #070b12; }
+  100% { background-color: #f8fafc; }
+}
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Timer */
+.discussion-container {
+  text-align: center;
+  width: 100%;
+  max-width: 340px;
+  padding: 20px;
+}
+.phase-title {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin: 0 0 8px 0;
+  color: #0f172a;
+}
+.phase-subtitle {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0 0 35px 0;
+}
+.timer-wrapper {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 40px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.timer-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 160px;
+  height: 160px;
+  transform: rotate(-90deg);
+}
+.track-ring {
+  fill: none;
+  stroke: #e2e8f0;
+  stroke-width: 8;
+}
+.progress-ring {
+  fill: none;
+  stroke: #10b981;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 452.39;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+}
+.timer-text {
+  font-size: 38px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  color: #0f172a;
+  transition: color 0.3s ease;
+}
+.timer-text.warning, .progress-ring.warning { stroke: #f97316; color: #f97316; }
+.timer-text.critical, .progress-ring.critical { stroke: #ef4444; color: #ef4444; }
+.pulse-critical { animation: textPulse 0.5s infinite ease-in-out alternate; }
+@keyframes textPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
+}
+
+/* Win Condition Screen */
+.win-title {
+  font-size: 40px;
+  font-weight: 900;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+.win-description {
+  font-size: 18px;
+  max-width: 450px;
+  line-height: 1.6;
+  padding: 0 20px;
+}
+body.theme-werewolf .win-title { color: #dc3545; }
+body.theme-werewolf .win-description { color: #b5a4a4; }
+body.theme-villager .win-title { color: #ffd700; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+body.theme-villager .win-description { color: #cbd5e1; }
+body.theme-doctor .win-title { color: #00f0ff; text-shadow: 0 0 15px rgba(0, 240, 255, 0.5); }
+body.theme-doctor .win-description { color: #cbd5e0; }
+
+.view-screen {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+.view-screen.active {
+  opacity: 1;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
+}

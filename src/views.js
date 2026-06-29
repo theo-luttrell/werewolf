@@ -76,7 +76,7 @@ export const views = {
           if (actor && actor.role === 'werewolf') {
             const targetName = players.find(x => x.id === act.target)?.name || 'Unknown';
             wolfTargets.push(`<div style="font-size: 14px; margin-top: 8px; color: #ffcccc; display:flex; align-items:center; gap:6px;">
-                <div style="width:16px;height:16px;">${icons.wolf}</div> ${actor.name} is targeting ${targetName}
+                <div style="width:16px;height:16px;">${icons.werewolf}</div> ${actor.name} is targeting ${targetName}
             </div>`);
           }
         }
@@ -189,7 +189,7 @@ export const views = {
           <div class="stagger-1" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,0,0,0.2); border-radius: 12px; padding: 20px; margin-top: 20px;">
              <div style="color: #ef4444; font-weight: bold; font-size: 14px; text-transform: uppercase; margin-bottom: 10px;">Your Pack</div>
              ${wolfNames.map(name => `<div style="color: #ffffff; font-size: 18px; margin: 5px 0; display:flex; align-items:center; justify-content:center; gap:8px;">
-                 <div style="width:20px;height:20px;color:#ef4444;">${icons.wolf}</div> ${name}
+                 <div style="width:20px;height:20px;color:#ef4444;">${icons.werewolf}</div> ${name}
              </div>`).join('')}
              ${wolfNames.length === 0 ? '<div style="color: #94a3b8;">No wolves exist. You are alone.</div>' : ''}
           </div>

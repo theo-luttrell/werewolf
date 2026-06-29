@@ -97,17 +97,22 @@ export class GameManager {
 
   async endNight() {
     // Resolve actions
-    let werewolfTarget = null;
+    let werewolfTargets = [];
     let doctorTarget = null;
 
     Object.entries(this.actions).forEach(([playerId, action]) => {
       const player = this.players[playerId];
       if (player && player.role === 'werewolf') {
-        werewolfTarget = action.target; // Simplification: just take the last werewolf's target
+        werewolfTargets.push(action.target);
       } else if (player && player.role === 'doctor') {
         doctorTarget = action.target;
       }
     });
+
+    let werewolfTarget = null;
+    if (werewolfTargets.length > 0) {
+       werewolfTarget = werewolfTargets[Math.floor(Math.random() * werewolfTargets.length)];
+    }
 
     const events = [];
 

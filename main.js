@@ -148,6 +148,10 @@ function handleState(data) {
   else if (data.state === 'reveal') {
     render(views.reveal(currentRole), `theme-${currentRole}`);
   } 
+  else if (!isAlive && data.state !== 'end') {
+    const playersArr = Object.entries(data.players || {}).map(([id, p]) => ({id, ...p}));
+    render(views.deadSpectator(playersArr, data.actions), 'theme-day');
+  }
   else if (data.state === 'night') {
     if (hasActed) {
       render(views.actionWaiting(), `theme-${currentRole}`);
@@ -156,10 +160,10 @@ function handleState(data) {
 
     const playersArr = Object.entries(data.players || {}).map(([id, p]) => ({id, ...p}));
     if (currentRole === 'werewolf') {
-      render(views.nightWerewolf(playersArr), 'theme-werewolf');
+      render(views.nightWerewolf(playersArr, playerId, data.actions), 'theme-werewolf');
       attachDropdown((targetId) => submitAction(targetId));
     } else if (currentRole === 'doctor') {
-      render(views.nightDoctor(playersArr), 'theme-doctor');
+      render(views.nightDoctor(playersArr, playerId), 'theme-doctor');
       attachDropdown((targetId) => submitAction(targetId));
     } else {
       render(views.nightVillager(), 'theme-villager');
@@ -179,7 +183,7 @@ function handleState(data) {
     }
 
     const playersArr = Object.entries(data.players || {}).map(([id, p]) => ({id, ...p}));
-    render(views.voting(playersArr), 'theme-day');
+    render(views.voting(playersArr, playerId), 'theme-day');
     attachDropdown((targetId) => submitAction(targetId));
   }
   else if (data.state === 'vote_summary') {

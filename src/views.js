@@ -40,8 +40,11 @@ export const views = {
     </div>
   `,
 
-  nightWerewolf: (players) => {
+  nightWerewolf: (players, currentPlayerId, actions) => {
     const options = players.map(p => {
+      if (p.id === currentPlayerId) {
+        return `<div class="option-item disabled"><span>${p.name} (You)</span></div>`;
+      }
       if (p.role === 'werewolf') {
         return `<div class="option-item disabled"><span>${p.name}</span><span class="status-badge werewolf">Wolf</span></div>`;
       } else if (!p.isAlive) {
@@ -49,6 +52,26 @@ export const views = {
       }
       return `<div class="option-item targetable" data-id="${p.id}"><span>${p.name}</span></div>`;
     }).join('');
+
+    let otherWolfTargets = '';
+    if (actions) {
+      const wolfTargets = [];
+      Object.entries(actions).forEach(([actId, act]) => {
+        if (actId !== currentPlayerId) {
+          const actor = players.find(x => x.id === actId);
+          if (actor && actor.role === 'werewolf') {
+            const targetName = players.find(x => x.id === act.target)?.name || 'Unknown';
+            wolfTargets.push(`<div style="font-size: 14px; margin-top: 8px; color: #ffcccc;">🐺 ${actor.name} is targeting ${targetName}</div>`);
+          }
+        }
+      });
+      if (wolfTargets.length > 0) {
+        otherWolfTargets = `<div style="margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+           <strong style="color: #ff6b6b; font-size:12px; text-transform:uppercase;">Pack Activity:</strong>
+           ${wolfTargets.join('')}
+        </div>`;
+      }
+    }
 
     return `
       <div class="night-container">
@@ -62,13 +85,17 @@ export const views = {
               </div>
               <div class="select-options" id="dropdownOptions">${options}</div>
           </div>
+          ${otherWolfTargets}
           <button class="submit-btn" id="nightSubmit" style="margin-top:20px; display:none;">Submit Action</button>
       </div>
     `;
   },
 
-  nightDoctor: (players) => {
+  nightDoctor: (players, currentPlayerId) => {
     const options = players.map(p => {
+      if (p.id === currentPlayerId) {
+        return `<div class="option-item disabled"><span>${p.name} (You)</span></div>`;
+      }
       if (!p.isAlive) {
         return `<div class="option-item disabled"><span>${p.name}</span><span class="status-badge dead">Dead</span></div>`;
       }
@@ -129,8 +156,11 @@ export const views = {
     </div>
   `,
 
-  voting: (players) => {
+  voting: (players, currentPlayerId) => {
     const options = players.map(p => {
+      if (p.id === currentPlayerId) {
+        return `<div class="option-item disabled"><span>${p.name} (You)</span></div>`;
+      }
       if (!p.isAlive) {
         return `<div class="option-item disabled"><span>${p.name}</span><span class="status-badge dead">Dead</span></div>`;
       }
@@ -165,5 +195,42 @@ export const views = {
         <h2 class="win-title">${winner} Victory!</h2>
         <p class="win-description">${winText}</p>
     </div>
-  `
+  `,
+
+  deadSpectator: (players, actions) => {
+    const playerList = players.map(p => `
+      <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+         <span style="color: ${p.isAlive ? '#fff' : '#666'}; ${!p.isAlive ? 'text-decoration: line-through;' : ''}">${p.name}</span>
+         <span style="color: ${p.role==='werewolf' ? '#ff6b6b' : (p.role==='doctor' ? '#4dabf7' : '#51cf66')}; font-weight:bold; text-transform:uppercase;">${p.role}</span>
+      </div>
+    `).join('');
+
+    let liveActionsHtml = '';
+    if (actions && Object.keys(actions).length > 0) {
+      const actionLines = Object.entries(actions).map(([actId, act]) => {
+         const actor = players.find(x => x.id === actId);
+         const target = players.find(x => x.id === act.target);
+         if (!actor || !target) return '';
+         return `<div style="font-size: 14px; padding: 5px 0; color: #ccc;">▶ <strong>${actor.name}</strong> (${actor.role}) targeted <strong>${target.name}</strong></div>`;
+      }).join('');
+
+      liveActionsHtml = `
+        <div style="margin-top: 20px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px;">
+           <h3 style="color: #ffd700; margin-top:0; font-size:16px;">Live Actions</h3>
+           ${actionLines}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="summary-container" style="max-width: 400px;">
+          <h1 class="summary-title" style="color: #ff6b6b; border-bottom: 2px solid #ff6b6b; padding-bottom: 10px;">💀 You are Dead</h1>
+          <p style="color: #ccc; margin-bottom: 20px;">You are now a spectator. Here is the critical info:</p>
+          <div style="background: rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden;">
+              ${playerList}
+          </div>
+          ${liveActionsHtml}
+      </div>
+    `;
+  }
 };

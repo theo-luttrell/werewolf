@@ -1,7 +1,7 @@
 import './style.css';
 import { db, auth } from './firebase.js';
 import { doc, collection, onSnapshot, setDoc } from 'firebase/firestore';
-import { signInAnonymously } from 'firebase/auth';
+import { signInAnonymously, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { views } from './src/views.js';
 
 const appDiv = document.getElementById('app');
@@ -106,6 +106,7 @@ function showNickname() {
     const name = input.value.trim();
     if (name) {
       try {
+        await setPersistence(auth, browserSessionPersistence);
         await signInAnonymously(auth);
         playerId = auth.currentUser.uid;
         sessionStorage.setItem('ww_playerId', playerId);

@@ -273,12 +273,17 @@ export const views = {
     </div>
   `,
 
-  end: (winner, winText) => `
-    <div class="view-screen active animate-fade-in">
-        <h2 class="win-title">${winner} Victory!</h2>
-        <p class="win-description stagger-1">${winText}</p>
-    </div>
-  `,
+  end: (winner, winText) => {
+    const color = winner === 'werewolf' ? '#ef4444' : '#eab308';
+    return `
+      <div class="view-screen active animate-fade-in" style="text-align: center;">
+          <h1 class="summary-title" style="color: ${color}; text-transform:uppercase; font-size: 32px; border-bottom: 2px solid ${color}; padding-bottom: 10px; margin-bottom: 15px;">
+             ${winner} VICTORY!
+          </h1>
+          <p class="wait-sub" style="color: #cbd5e1; margin-bottom: 25px; font-weight: 500; font-size:18px;">${winText}</p>
+      </div>
+    `;
+  },
 
   deadSpectator: (players, actions) => {
     const playerList = players.map((p, i) => {
@@ -295,11 +300,17 @@ export const views = {
     if (actions && Object.keys(actions).length > 0) {
       const actionLines = Object.entries(actions).map(([actId, act]) => {
         const actor = players.find(x => x.id === actId);
-        const target = players.find(x => x.id === act.target);
-        if (!actor || !target) return '';
-        return `<div class="stagger-1" style="font-size: 14px; padding: 5px 0; color: #475569; display:flex; align-items:center; gap:5px;">
-            <div style="width:14px;height:14px;color:#ea580c">${icons[actor.role] || icons.villager}</div>
-            <strong>${actor.name}</strong> targeted <strong>${target.name}</strong>
+        if (!actor) return '';
+        
+        const history = act.history || [act.target];
+        const targetNames = history.map(tId => {
+           const t = players.find(x => x.id === tId);
+           return t ? `<strong>${t.name}</strong>` : '<strong>Unknown</strong>';
+        }).join(' ➔ ');
+
+        return `<div class="stagger-1" style="font-size: 14px; padding: 5px 0; color: #475569; display:flex; align-items:center; gap:5px; flex-wrap: wrap;">
+            <div style="width:14px;height:14px;color:#ea580c;flex-shrink:0;">${icons[actor.role] || icons.villager}</div>
+            <span style="word-break: break-word;"><strong>${actor.name}</strong> targeted ${targetNames}</span>
         </div>`;
       }).join('');
 

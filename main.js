@@ -167,7 +167,15 @@ function listenToRoom() {
         werewolfUnsub = onSnapshot(doc(db, "rooms", roomCode, "werewolfData", "actions"), (wSnap) => {
           const wData = wSnap.data();
           if (wData) {
-            gameState.actions = { ...gameState.actions, ...wData };
+            for (const pId in wData) {
+              const tId = wData[pId].target;
+              if (!gameState.actions[pId]) {
+                 gameState.actions[pId] = { target: tId, history: [tId] };
+              } else if (gameState.actions[pId].target !== tId) {
+                 gameState.actions[pId].target = tId;
+                 gameState.actions[pId].history.push(tId);
+              }
+            }
           }
           handleState(gameState);
         });
@@ -183,6 +191,9 @@ let hasActed = false;
 function handleState(data) {
   if (data.state !== lastState) {
      hasActed = false;
+     if (data.state === 'night' || data.state === 'voting') {
+         gameState.actions = {}; // Clear action history on new phase
+     }
   }
 
   // Handle Dead Spectator Vision Sync
@@ -193,7 +204,13 @@ function handleState(data) {
           gameState.players[pDoc.id].role = pDoc.data().role;
         }
         if (pDoc.data().target) {
-          gameState.actions[pDoc.id] = { target: pDoc.data().target };
+          const tId = pDoc.data().target;
+          if (!gameState.actions[pDoc.id]) {
+            gameState.actions[pDoc.id] = { target: tId, history: [tId] };
+          } else if (gameState.actions[pDoc.id].target !== tId) {
+            gameState.actions[pDoc.id].target = tId;
+            gameState.actions[pDoc.id].history.push(tId);
+          }
         }
       });
       // Force a re-render of the dead spectator view

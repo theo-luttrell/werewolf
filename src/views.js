@@ -132,7 +132,7 @@ export const views = {
   `,
 
   day: (events) => {
-    const eventLines = events.map((ev, i) => `<p class="summary-line line-${i+1}" style="animation-delay:${1.8 + i*1.4}s">${ev}</p>`).join('');
+    const eventLines = events.map((ev, i) => `<p class="summary-line line-${i + 1}" style="animation-delay:${1.8 + i * 1.4}s">${ev}</p>`).join('');
     return `
       <div class="summary-container">
           <div class="sun-icon">☀️</div>
@@ -199,34 +199,34 @@ export const views = {
 
   deadSpectator: (players, actions) => {
     const playerList = players.map(p => `
-      <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-         <span style="color: ${p.isAlive ? '#fff' : '#666'}; ${!p.isAlive ? 'text-decoration: line-through;' : ''}">${p.name}</span>
-         <span style="color: ${p.role==='werewolf' ? '#ff6b6b' : (p.role==='doctor' ? '#4dabf7' : '#51cf66')}; font-weight:bold; text-transform:uppercase;">${p.role}</span>
+      <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+         <span style="color: ${p.isAlive ? '#1e293b' : '#94a3b8'}; font-weight: 600; ${!p.isAlive ? 'text-decoration: line-through;' : ''}">${p.name}</span>
+         <span style="color: ${p.role === 'werewolf' ? '#dc2626' : (p.role === 'doctor' ? '#0284c7' : '#16a34a')}; font-weight:bold; text-transform:uppercase;">${p.role}</span>
       </div>
     `).join('');
 
     let liveActionsHtml = '';
     if (actions && Object.keys(actions).length > 0) {
       const actionLines = Object.entries(actions).map(([actId, act]) => {
-         const actor = players.find(x => x.id === actId);
-         const target = players.find(x => x.id === act.target);
-         if (!actor || !target) return '';
-         return `<div style="font-size: 14px; padding: 5px 0; color: #ccc;">▶ <strong>${actor.name}</strong> (${actor.role}) targeted <strong>${target.name}</strong></div>`;
+        const actor = players.find(x => x.id === actId);
+        const target = players.find(x => x.id === act.target);
+        if (!actor || !target) return '';
+        return `<div style="font-size: 14px; padding: 5px 0; color: #475569;">▶ <strong>${actor.name}</strong> (${actor.role}) targeted <strong>${target.name}</strong></div>`;
       }).join('');
 
       liveActionsHtml = `
-        <div style="margin-top: 20px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px;">
-           <h3 style="color: #ffd700; margin-top:0; font-size:16px;">Live Actions</h3>
+        <div style="margin-top: 20px; background: rgba(0,0,0,0.05); border-radius: 8px; padding: 15px; text-align: left;">
+           <h3 style="color: #ea580c; margin-top:0; font-size:16px;">Live Actions</h3>
            ${actionLines}
         </div>
       `;
     }
 
     return `
-      <div class="summary-container" style="max-width: 400px;">
-          <h1 class="summary-title" style="color: #ff6b6b; border-bottom: 2px solid #ff6b6b; padding-bottom: 10px;">💀 You are Dead</h1>
-          <p style="color: #ccc; margin-bottom: 20px;">You are now a spectator. Here is the critical info:</p>
-          <div style="background: rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden;">
+      <div class="summary-container" style="max-width: 400px; margin: 0 auto;">
+          <h1 class="summary-title" style="color: #dc2626; border-bottom: 2px solid #fecaca; padding-bottom: 10px; margin-bottom: 15px;">💀 You are Dead</h1>
+          <p style="color: #64748b; margin-bottom: 25px; font-weight: 500;">You are now a spectator.</p>
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; text-align: left; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
               ${playerList}
           </div>
           ${liveActionsHtml}

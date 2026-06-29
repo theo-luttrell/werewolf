@@ -279,6 +279,7 @@ body.theme-villager .select-trigger.open {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: #f3f4f6;
 }
 .option-item:last-child {
   border-bottom: none;
@@ -287,7 +288,7 @@ body.theme-villager .select-trigger.open {
   background-color: #1f2937;
 }
 .option-item.disabled {
-  color: #4b5563 !important;
+  color: #6b7280 !important;
   background-color: #0b0f17 !important;
   cursor: not-allowed;
   pointer-events: none;

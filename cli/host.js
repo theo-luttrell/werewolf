@@ -11,12 +11,14 @@ gm.onActionSubmitted = (role) => {
     console.log(chalk.dim(`\n[Update] A Werewolf has locked in their target.`));
   } else if (role === 'doctor') {
     console.log(chalk.dim(`\n[Update] The Doctor has locked in their save.`));
+  } else if (role === 'seer') {
+    console.log(chalk.dim(`\n[Update] A Seer has locked in their target.`));
   }
 };
 
 async function main() {
   console.log(chalk.bold.yellow("Werewolf Host Environment Initialized."));
-  
+
   while (true) {
     const { command } = await inquirer.prompt([{
       type: 'input',
@@ -25,14 +27,14 @@ async function main() {
     }]);
 
     const cmd = command.trim().toLowerCase();
-    
+
     try {
       if (cmd === 'werewolf env start') {
         console.log(chalk.green("Environment active. Use 'game open' to begin."));
       }
       else if (cmd === 'game open') {
         const code = await gm.openGame((players) => {
-           console.log(chalk.dim(`\n[Update] Player count is now: ${Object.keys(players).length}`));
+          console.log(chalk.dim(`\n[Update] Player count is now: ${Object.keys(players).length}`));
         });
         console.log(chalk.bgBlue.white(` ROOM OPEN `) + ` Code: ` + chalk.bold.green(code));
       }
@@ -41,7 +43,7 @@ async function main() {
           console.log(chalk.red("Open a game first."));
           continue;
         }
-        
+
         const counts = await inquirer.prompt([
           { type: 'number', name: 'w', message: 'Number of Werewolves?', default: 1 },
           { type: 'number', name: 'm', message: 'Number of Minions?', default: 0 },
@@ -49,14 +51,14 @@ async function main() {
           { type: 'number', name: 's', message: 'Number of Seers?', default: 0 },
           { type: 'number', name: 'v', message: 'Number of Villagers?', default: 2 }
         ]);
-        
+
         await gm.assignRoles(counts.w, counts.m, counts.d, counts.s, counts.v);
         console.log(chalk.green("Roles assigned. Players are now viewing their roles."));
       }
       else if (cmd === 'game start' || cmd === 'night start') {
         if (await gm.checkWinCondition()) {
-           console.log(chalk.bold.magenta("Game Over! Win condition met."));
-           continue;
+          console.log(chalk.bold.magenta("Game Over! Win condition met."));
+          continue;
         }
         await gm.startNight();
         console.log(chalk.blue(`Night ${gm.dayNumber} has started. Waiting for player actions...`));
@@ -64,7 +66,7 @@ async function main() {
       else if (cmd === 'night end') {
         await gm.endNight();
         console.log(chalk.yellow(`Night ended. Day ${gm.dayNumber} has begun. Morning report sent.`));
-        
+
         // Optionally prompt to start discussion directly or let them wait
         const { startDisc } = await inquirer.prompt([{
           type: 'confirm',
@@ -72,10 +74,10 @@ async function main() {
           message: 'Start 60s discussion timer now?',
           default: true
         }]);
-        
+
         if (startDisc) {
-           await gm.startDiscussion(60);
-           console.log(chalk.green("Discussion started."));
+          await gm.startDiscussion(60);
+          console.log(chalk.green("Discussion started."));
         }
       }
       else if (cmd === 'disc end') {
@@ -85,22 +87,22 @@ async function main() {
       else if (cmd === 'vote end') {
         await gm.endVoting();
         console.log(chalk.magenta("Voting ended. Summary displayed."));
-        
+
         if (await gm.checkWinCondition()) {
-           console.log(chalk.bold.magenta("Game Over! Win condition met."));
+          console.log(chalk.bold.magenta("Game Over! Win condition met."));
         }
       }
       else if (cmd === 'reveal crit') {
         console.log(chalk.bgRed.white(" CRITICAL INFO REVEALED "));
         console.log(chalk.yellow("Players:"));
         Object.entries(gm.players).forEach(([id, p]) => {
-           console.log(` - ${p.name} (${p.role}) - ${p.isAlive ? 'Alive' : 'Dead'}`);
+          console.log(` - ${p.name} (${p.role}) - ${p.isAlive ? 'Alive' : 'Dead'}`);
         });
         console.log(chalk.yellow("Actions:"));
         Object.entries(gm.actions).forEach(([id, a]) => {
-           const actor = gm.players[id] ? gm.players[id].name : id;
-           const target = gm.players[a.target] ? gm.players[a.target].name : a.target;
-           console.log(` - ${actor} targeted ${target}`);
+          const actor = gm.players[id] ? gm.players[id].name : id;
+          const target = gm.players[a.target] ? gm.players[a.target].name : a.target;
+          console.log(` - ${actor} targeted ${target}`);
         });
       }
       else if (cmd === 'kick players') {

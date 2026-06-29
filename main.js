@@ -224,9 +224,10 @@ function handleState(data) {
   lastState = data.state;
 
   if (data.state === 'kicked') {
-    sessionStorage.removeItem('roomCode');
-    sessionStorage.removeItem('playerId');
-    window.location.reload();
+    sessionStorage.removeItem('ww_roomCode');
+    sessionStorage.removeItem('ww_playerId');
+    window.location.href = window.location.pathname; // Safely reload to root without loops
+    return;
   }
   else if (data.state === 'lobby') {
     render(views.waiting());

@@ -21,6 +21,7 @@ export class GameManager {
     this.players = {}; // stores public {name, isAlive} + private {role}
     this.actions = {}; // mapped by playerId -> {target}
     this.state = 'setup'; 
+    this.dayNumber = 1;
     this.onActionSubmitted = null;
   }
 
@@ -127,13 +128,16 @@ export class GameManager {
 
     playerIds.forEach((id, i) => {
       this.players[id].role = roles[i];
+      this.players[id].isAlive = true;
       const privRef = db.collection("rooms").doc(this.roomCode).collection("private").doc(id);
+      const pubRef = db.collection("rooms").doc(this.roomCode).collection("players").doc(id);
       
       let privateData = { role: roles[i], target: null, seerResult: null };
       if (roles[i] === 'minion') {
         privateData.werewolves = wolfIds;
       }
       batch.update(privRef, privateData);
+      batch.update(pubRef, { isAlive: true });
     });
 
     const roomRef = db.collection("rooms").doc(this.roomCode);
@@ -235,6 +239,7 @@ export class GameManager {
       events: events
     });
     this.state = 'day';
+    this.dayNumber++;
   }
 
   async startDiscussion(seconds = 60) {

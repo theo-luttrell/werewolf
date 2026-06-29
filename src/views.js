@@ -1,17 +1,25 @@
 export const views = {
   login: () => `
-    <div class="pin-container">
-        <input type="text" class="pin-box" maxlength="1" id="p1" autofocus>
-        <input type="text" class="pin-box" maxlength="1" id="p2">
-        <input type="text" class="pin-box" maxlength="1" id="p3">
-        <input type="text" class="pin-box" maxlength="1" id="p4">
+    <div class="wait-container" style="text-align: center; padding: 20px;">
+        <h1 class="wait-title" style="margin-bottom: 20px; font-size: 36px; letter-spacing: 2px;">WEREWOLF</h1>
+        <p class="wait-sub" style="animation: none; margin-bottom: 30px;">Enter Room Code</p>
+        <div class="pin-container" style="margin-top: 0;">
+            <input type="text" class="pin-box" maxlength="1" id="p1" autofocus>
+            <input type="text" class="pin-box" maxlength="1" id="p2">
+            <input type="text" class="pin-box" maxlength="1" id="p3">
+            <input type="text" class="pin-box" maxlength="1" id="p4">
+        </div>
     </div>
   `,
 
   nickname: () => `
-    <div class="form-container">
-        <input type="text" class="nickname-input" id="nicknameInput" placeholder="Enter Nickname" maxlength="15" autofocus>
-        <button type="submit" class="submit-btn" id="nicknameSubmit">Submit</button>
+    <div class="wait-container" style="text-align: center; padding: 20px;">
+        <h1 class="wait-title" style="margin-bottom: 20px; font-size: 36px; letter-spacing: 2px;">WEREWOLF</h1>
+        <p class="wait-sub" style="animation: none; margin-bottom: 30px;">Choose Your Name</p>
+        <div class="form-container" style="margin-top: 0;">
+            <input type="text" class="nickname-input" id="nicknameInput" placeholder="Enter Nickname" maxlength="15" autofocus>
+            <button type="submit" class="submit-btn" id="nicknameSubmit">Join Game</button>
+        </div>
     </div>
   `,
 

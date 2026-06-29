@@ -1,4 +1,5 @@
-import admin from 'firebase-admin';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -7,12 +8,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const serviceAccount = JSON.parse(fs.readFileSync(path.join(__dirname, '../serviceAccountKey.json'), 'utf-8'));
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+if (!getApps().length) {
+  initializeApp({
+    credential: cert(serviceAccount)
   });
 }
-const db = admin.firestore();
+const db = getFirestore();
 
 export class GameManager {
   constructor() {
@@ -32,7 +33,7 @@ export class GameManager {
     this.generateRoomCode();
     await db.collection("rooms").doc(this.roomCode).set({
       state: 'lobby',
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp()
     });
 
     // Listen to players subcollection

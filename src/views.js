@@ -313,7 +313,7 @@ export const views = {
 
     return `
       <div class="summary-container animate-fade-in" style="max-width: 400px; margin: 0 auto;">
-          <div class="float-anim" style="width:50px;height:50px;margin: 0 auto 15px auto; color:#dc2626;">${icons.dead}</div>
+          <div class="float-anim" style="width:50px;height:50px;margin: 0 auto 15px auto; color:#dc2626;">${icons.skull}</div>
           <h1 class="summary-title" style="color: #dc2626; border-bottom: 2px solid #fecaca; padding-bottom: 10px; margin-bottom: 15px;">You are Dead</h1>
           <p class="wait-sub" style="color: #64748b; margin-bottom: 25px; font-weight: 500; animation:none;">You are now a spectator.</p>
           <div class="stagger-1" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; text-align: left; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">

@@ -145,9 +145,9 @@ function listenToRoom() {
 
   // 2. Listen to public players list
   playersUnsub = onSnapshot(collection(db, "rooms", roomCode, "players"), (snap) => {
-    gameState.players = {};
+    gameState.players = gameState.players || {};
     snap.forEach(docSnap => {
-      gameState.players[docSnap.id] = docSnap.data();
+      gameState.players[docSnap.id] = { ...gameState.players[docSnap.id], ...docSnap.data() };
     });
     if (gameState.players[playerId]) {
       isAlive = gameState.players[playerId].isAlive;

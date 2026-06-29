@@ -123,6 +123,28 @@ export class GameManager {
     this.state = 'reveal';
   }
 
+  async checkWinCondition() {
+    let aliveWolves = 0;
+    let aliveTown = 0;
+
+    Object.values(this.players).forEach(p => {
+      if (p.isAlive) {
+        if (p.role === 'werewolf') aliveWolves++;
+        else aliveTown++;
+      }
+    });
+
+    if (aliveWolves === 0) {
+      await this.endGame('villager', 'The Werewolves have been eliminated!');
+      return true;
+    }
+    if (aliveWolves >= aliveTown) {
+      await this.endGame('werewolf', 'The Werewolves have overrun the town!');
+      return true;
+    }
+    return false;
+  }
+
   async startNight() {
     this.actions = {}; // Clear memory actions
     const batch = db.batch();

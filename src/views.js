@@ -127,6 +127,68 @@ export const views = {
     `;
   },
 
+  nightSeer: (players, currentPlayerId) => {
+    const options = players.map(p => {
+      if (p.id === currentPlayerId) {
+        return `<div class="option-item disabled"><span>${p.name} (You)</span></div>`;
+      }
+      if (!p.isAlive) {
+        return `<div class="option-item disabled"><span>${p.name}</span><span class="status-badge dead">Dead</span></div>`;
+      }
+      return `<div class="option-item targetable" data-id="${p.id}"><span>${p.name}</span></div>`;
+    }).join('');
+
+    return `
+      <div class="night-container">
+          <div class="moon-icon">🌙</div>
+          <h1 class="night-title">Night Phase</h1>
+          <p class="night-subtitle">Seer, gaze into your crystal ball to reveal a player's true identity:</p>
+          <div class="custom-select-wrapper">
+              <div class="select-trigger" id="dropdownTrigger">
+                  <span id="selectedValue">Select Player...</span>
+                  <div class="arrow-icon"></div>
+              </div>
+              <div class="select-options" id="dropdownOptions">${options}</div>
+          </div>
+          <button class="submit-btn" id="nightSubmit" style="margin-top:20px; display:none;">Peer into soul</button>
+      </div>
+    `;
+  },
+
+  nightSeerResult: (targetName, targetRole) => {
+    const roleEmoji = targetRole === 'werewolf' ? '🐺' : targetRole === 'doctor' ? '💊' : targetRole === 'seer' ? '🔮' : targetRole === 'minion' ? '👺' : '🧑‍🌾';
+    return `
+      <div class="night-container">
+          <div class="moon-icon">👁️</div>
+          <h1 class="night-title">Vision Received</h1>
+          <p class="night-subtitle">The spirits have revealed the truth about ${targetName}.</p>
+          <div style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 25px; margin-top: 20px;">
+             <div style="font-size: 50px; margin-bottom: 15px;">${roleEmoji}</div>
+             <div style="font-size: 24px; font-weight: bold; color: #ffffff;">${targetRole.toUpperCase()}</div>
+          </div>
+      </div>
+    `;
+  },
+
+  nightMinion: (wolfNames) => {
+    return `
+      <div class="night-container">
+          <div class="moon-icon">👺</div>
+          <h1 class="night-title">Night Phase</h1>
+          <p class="night-subtitle">You are a Minion. Help the Werewolves win.</p>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,0,0,0.2); border-radius: 12px; padding: 20px; margin-top: 20px;">
+             <div style="color: #ef4444; font-weight: bold; font-size: 14px; text-transform: uppercase; margin-bottom: 10px;">Your Pack</div>
+             ${wolfNames.map(name => `<div style="color: #ffffff; font-size: 18px; margin: 5px 0;">🐺 ${name}</div>`).join('')}
+             ${wolfNames.length === 0 ? '<div style="color: #94a3b8;">No wolves exist. You are alone.</div>' : ''}
+          </div>
+          <div style="display:flex; justify-content:center; margin-top:25px;">
+              <div class="spinner" style="border-top-color:#ef4444; width:30px; height:30px;"></div>
+          </div>
+          <p class="wait-sub" style="margin-top:15px; font-size:14px;">Waiting for wolves to strike...</p>
+      </div>
+    `;
+  },
+
   nightVillager: () => `
     <div class="night-container">
         <div class="moon-icon">🌙</div>

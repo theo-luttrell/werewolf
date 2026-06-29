@@ -159,6 +159,7 @@ function listenToRoom() {
     const data = snap.data();
     if (data) {
       currentRole = data.role;
+      gameState.privateData = data;
       
       // Werewolf Vision Sync
       if (currentRole === 'werewolf' && !werewolfUnsub) {
@@ -224,9 +225,23 @@ function handleState(data) {
     if (currentRole === 'werewolf') {
       render(views.nightWerewolf(playersArr, playerId, gameState.actions), 'theme-werewolf');
       attachDropdown((targetId) => submitAction(targetId));
+    } else if (currentRole === 'minion') {
+      const wolfIds = gameState.privateData?.werewolves || [];
+      const wolfNames = wolfIds.map(id => gameState.players[id]?.name || 'Unknown Wolf');
+      render(views.nightMinion(wolfNames), 'theme-minion');
     } else if (currentRole === 'doctor') {
       render(views.nightDoctor(playersArr, playerId), 'theme-doctor');
       attachDropdown((targetId) => submitAction(targetId));
+    } else if (currentRole === 'seer') {
+      if (gameState.privateData?.seerResult) {
+        const resultPlayerName = gameState.players[gameState.privateData.seerResult.id]?.name || 'Unknown';
+        render(views.nightSeerResult(resultPlayerName, gameState.privateData.seerResult.role), 'theme-seer');
+      } else if (hasActed) {
+        render(views.actionWaiting(), 'theme-seer');
+      } else {
+        render(views.nightSeer(playersArr, playerId), 'theme-seer');
+        attachDropdown((targetId) => submitAction(targetId));
+      }
     } else {
       render(views.nightVillager(), 'theme-villager');
     }

@@ -69,6 +69,14 @@ export class GameManager {
             if (this.onActionSubmitted) {
               this.onActionSubmitted(pData.role || 'unknown');
             }
+            
+            // SEER LOGIC
+            if (pData.role === 'seer' && !pData.seerResult) {
+               const targetRole = this.players[pData.target]?.role || 'unknown';
+               db.collection("rooms").doc(this.roomCode).collection("private").doc(pId).update({
+                 seerResult: { id: pData.target, role: targetRole }
+               });
+            }
           }
           this.actions[pId] = { target: pData.target };
         }
@@ -90,30 +98,42 @@ export class GameManager {
     return this.roomCode;
   }
 
-  async assignRoles(werewolves, doctors, villagers) {
+  async assignRoles(werewolves, minions, doctors, seers, villagers) {
     werewolves = Number(werewolves);
+    minions = Number(minions);
     doctors = Number(doctors);
+    seers = Number(seers);
     villagers = Number(villagers);
     const playerIds = Object.keys(this.players);
-    const totalRoles = werewolves + doctors + villagers;
+    const totalRoles = werewolves + minions + doctors + seers + villagers;
     if (playerIds.length !== totalRoles) {
       throw new Error(`Role count (${totalRoles}) does not match player count (${playerIds.length})`);
     }
 
     let roles = [];
     for(let i=0; i<werewolves; i++) roles.push('werewolf');
+    for(let i=0; i<minions; i++) roles.push('minion');
     for(let i=0; i<doctors; i++) roles.push('doctor');
+    for(let i=0; i<seers; i++) roles.push('seer');
     for(let i=0; i<villagers; i++) roles.push('villager');
 
     // Shuffle
     roles.sort(() => Math.random() - 0.5);
+
+    // Identify all werewolves to pass to minions
+    const wolfIds = playerIds.filter((id, i) => roles[i] === 'werewolf');
 
     const batch = db.batch();
 
     playerIds.forEach((id, i) => {
       this.players[id].role = roles[i];
       const privRef = db.collection("rooms").doc(this.roomCode).collection("private").doc(id);
-      batch.update(privRef, { role: roles[i], target: null });
+      
+      let privateData = { role: roles[i], target: null, seerResult: null };
+      if (roles[i] === 'minion') {
+        privateData.werewolves = wolfIds;
+      }
+      batch.update(privRef, privateData);
     });
 
     const roomRef = db.collection("rooms").doc(this.roomCode);
@@ -125,11 +145,13 @@ export class GameManager {
 
   async checkWinCondition() {
     let aliveWolves = 0;
+    let aliveMinions = 0;
     let aliveTown = 0;
 
     Object.values(this.players).forEach(p => {
       if (p.isAlive) {
         if (p.role === 'werewolf') aliveWolves++;
+        else if (p.role === 'minion') aliveMinions++;
         else aliveTown++;
       }
     });
@@ -138,7 +160,7 @@ export class GameManager {
       await this.endGame('villager', 'The Werewolves have been eliminated!');
       return true;
     }
-    if (aliveWolves >= aliveTown) {
+    if ((aliveWolves + aliveMinions) >= aliveTown) {
       await this.endGame('werewolf', 'The Werewolves have overrun the town!');
       return true;
     }
@@ -152,7 +174,7 @@ export class GameManager {
     // Clear private targets
     for (const id of Object.keys(this.players)) {
       const privRef = db.collection("rooms").doc(this.roomCode).collection("private").doc(id);
-      batch.update(privRef, { target: null });
+      batch.update(privRef, { target: null, seerResult: null });
     }
     
     // Clear werewolf sync

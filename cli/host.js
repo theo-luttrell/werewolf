@@ -44,11 +44,13 @@ async function main() {
         
         const counts = await inquirer.prompt([
           { type: 'number', name: 'w', message: 'Number of Werewolves?', default: 1 },
+          { type: 'number', name: 'm', message: 'Number of Minions?', default: 0 },
           { type: 'number', name: 'd', message: 'Number of Doctors?', default: 1 },
+          { type: 'number', name: 's', message: 'Number of Seers?', default: 0 },
           { type: 'number', name: 'v', message: 'Number of Villagers?', default: 2 }
         ]);
         
-        await gm.assignRoles(counts.w, counts.d, counts.v);
+        await gm.assignRoles(counts.w, counts.m, counts.d, counts.s, counts.v);
         console.log(chalk.green("Roles assigned. Players are now viewing their roles."));
       }
       else if (cmd === 'game start' || cmd === 'night start') {

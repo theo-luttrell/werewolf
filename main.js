@@ -205,7 +205,12 @@ function handleState(data) {
 
   lastState = data.state;
 
-  if (data.state === 'lobby') {
+  if (data.state === 'kicked') {
+    sessionStorage.removeItem('roomCode');
+    sessionStorage.removeItem('playerId');
+    window.location.reload();
+  }
+  else if (data.state === 'lobby') {
     render(views.waiting());
   } 
   else if (data.state === 'reveal') {

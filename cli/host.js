@@ -103,6 +103,10 @@ async function main() {
            console.log(` - ${actor} targeted ${target}`);
         });
       }
+      else if (cmd === 'kick players') {
+        await gm.kickPlayers();
+        console.log(chalk.yellow("All players have been kicked to the login screen."));
+      }
       else if (cmd === 'exit' || cmd === 'quit') {
         console.log("Exiting host environment.");
         process.exit(0);

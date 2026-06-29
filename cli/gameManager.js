@@ -306,12 +306,21 @@ export class GameManager {
     this.state = 'vote_summary';
   }
 
-  async endGame(winner, text) {
+  async endGame(winner, winText) {
+    this.state = 'end';
     await db.collection("rooms").doc(this.roomCode).update({
       state: 'end',
-      winner: winner, // 'werewolf' or 'villager'
-      winText: text
+      winner,
+      winText
     });
-    this.state = 'end';
+  }
+
+  async kickPlayers() {
+    this.state = 'kicked';
+    await db.collection("rooms").doc(this.roomCode).update({
+      state: 'kicked'
+    });
   }
 }
+
+export default GameManager;

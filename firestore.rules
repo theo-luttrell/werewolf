@@ -5,8 +5,8 @@ service cloud.firestore {
     match /rooms/{roomId} {
       // Anyone can read public room state (phase, timer)
       allow read: if true;
-      // Anyone can create a room or update state (we can restrict this later, but for now we need it open for testing)
-      allow write: if true;
+      // The Room Root (state, timer) is strictly managed by the Game Manager backend
+      allow write: if false;
 
       match /players/{uid} {
         // Anyone can see the player list and who is alive

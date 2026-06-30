@@ -1,56 +1,75 @@
-const sounds = {
-  bgm_lobby: new Audio('https://actions.google.com/sounds/v1/ambiences/barn_and_animals.ogg'),
-  bgm_day: new Audio('https://actions.google.com/sounds/v1/nature/morning_in_the_village.ogg'),
-  bgm_night: new Audio('https://actions.google.com/sounds/v1/horror/ambient_horror_drone.ogg'),
-  sfx_click: new Audio('https://actions.google.com/sounds/v1/foley/pen_click.ogg'),
-  sfx_tick: new Audio('https://actions.google.com/sounds/v1/alarms/mechanical_clock_tick.ogg'),
-  sfx_win: new Audio('https://actions.google.com/sounds/v1/cartoon/cartoon_success_fanfare.ogg'),
-  sfx_lose: new Audio('https://actions.google.com/sounds/v1/horror/scary_ghost_wail.ogg')
+// BGM uses HTML Audio mapped to local files downloaded to public/audio/
+const bgm = {
+  lobby: new Audio('/audio/lobby.mp3'),
+  day: new Audio('/audio/day.mp3'),
+  night: new Audio('/audio/night.mp3'),
 };
 
-// Configure loops and volumes
-sounds.bgm_lobby.loop = true;
-sounds.bgm_lobby.volume = 0.3;
-
-sounds.bgm_day.loop = true;
-sounds.bgm_day.volume = 0.2;
-
-sounds.bgm_night.loop = true;
-sounds.bgm_night.volume = 0.4;
-
-sounds.sfx_click.volume = 0.7;
-sounds.sfx_tick.volume = 0.3;
-sounds.sfx_win.volume = 0.6;
-sounds.sfx_lose.volume = 0.6;
+Object.values(bgm).forEach(audio => {
+  audio.loop = true;
+  audio.volume = 0.2;
+});
+bgm.night.volume = 0.3; // Night a bit louder
 
 let currentBGM = null;
 let audioUnlocked = false;
+let pendingBGM = null;
+
+// SFX uses Web Audio API for instantaneous, reliable sounds without external files
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playTone(freq, type, duration, vol) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+  
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
 
 export const audio = {
   init: () => {
     if (audioUnlocked) return;
-    // Browsers require a user gesture to play audio.
-    // We play and immediately pause an invisible sound to unlock the audio context.
-    sounds.sfx_click.play().then(() => {
-      sounds.sfx_click.pause();
-      sounds.sfx_click.currentTime = 0;
-      audioUnlocked = true;
-    }).catch(e => console.warn("Audio unlock failed:", e));
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    
+    // Play a silent tone to unlock AudioContext on iOS/Safari
+    const osc = audioCtx.createOscillator();
+    osc.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.01);
+    
+    audioUnlocked = true;
+    
+    if (pendingBGM) {
+      audio.playBGM(pendingBGM);
+      pendingBGM = null;
+    }
   },
   
   playBGM: (trackName) => {
-    if (!audioUnlocked) return;
-    const nextBGM = sounds[`bgm_${trackName}`];
+    if (!audioUnlocked) {
+      pendingBGM = trackName;
+      return;
+    }
+    const nextBGM = bgm[trackName];
     
     if (currentBGM === nextBGM) return; // Already playing
     
-    // Stop current
     if (currentBGM) {
       currentBGM.pause();
       currentBGM.currentTime = 0;
     }
     
-    // Play next
     if (nextBGM) {
       nextBGM.play().catch(e => console.warn("BGM play failed:", e));
       currentBGM = nextBGM;
@@ -60,13 +79,23 @@ export const audio = {
   },
   
   playSFX: (effectName) => {
-    if (!audioUnlocked) return;
-    const sfx = sounds[`sfx_${effectName}`];
-    if (sfx) {
-      // Clone the node so we can play overlapping sounds (like fast clicking)
-      const clone = sfx.cloneNode();
-      clone.volume = sfx.volume;
-      clone.play().catch(e => console.warn("SFX play failed:", e));
+    if (!audioUnlocked && audioCtx.state === 'suspended') audioCtx.resume();
+    
+    if (effectName === 'click') {
+      playTone(800, 'sine', 0.05, 0.4);
+    } 
+    else if (effectName === 'tick') {
+      playTone(1200, 'square', 0.02, 0.1);
+    } 
+    else if (effectName === 'win') {
+      setTimeout(() => playTone(440, 'sine', 0.2, 0.5), 0);
+      setTimeout(() => playTone(554, 'sine', 0.2, 0.5), 150);
+      setTimeout(() => playTone(659, 'sine', 0.4, 0.5), 300);
+    } 
+    else if (effectName === 'lose') {
+      setTimeout(() => playTone(300, 'sawtooth', 0.4, 0.5), 0);
+      setTimeout(() => playTone(280, 'sawtooth', 0.4, 0.5), 300);
+      setTimeout(() => playTone(250, 'sawtooth', 0.8, 0.5), 600);
     }
   },
   

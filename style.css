@@ -7,7 +7,10 @@ body {
   height: 100vh;
   margin: 0;
   background-color: #ffffff;
-  transition: background-color 0.5s ease;
+  transition: background-color 0.5s ease, background-image 0.5s ease;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   overflow: hidden;
   color: #333333;
 }
@@ -161,23 +164,23 @@ body {
 }
 
 /* THEMES */
-body.theme-werewolf { background-color: #0b0202; color: #e2e8f0; }
+body.theme-werewolf { background-color: #0b0202; background-image: linear-gradient(rgba(11, 2, 2, 0.8), rgba(11, 2, 2, 0.95)), url('/bg/werewolf.png'); color: #e2e8f0; }
 body.theme-werewolf .reveal-text { color: #8a8a8a; }
 body.theme-werewolf .role-text { color: #dc3545; }
 
-body.theme-minion { background-color: #1a0505; color: #e2e8f0; }
+body.theme-minion { background-color: #1a0505; background-image: linear-gradient(rgba(26, 5, 5, 0.8), rgba(26, 5, 5, 0.95)), url('/bg/werewolf.png'); color: #e2e8f0; }
 body.theme-minion .reveal-text { color: #d97777; }
 body.theme-minion .role-text { color: #ef4444; text-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
 
-body.theme-villager { background-color: #0b1325; color: #e2e8f0; }
+body.theme-villager { background-color: #0b1325; background-image: linear-gradient(rgba(11, 19, 37, 0.7), rgba(11, 19, 37, 0.9)), url('/bg/villager.png'); color: #e2e8f0; }
 body.theme-villager .reveal-text { color: #b0c4de; }
 body.theme-villager .role-text { color: #ffd700; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
 
-body.theme-doctor { background-color: #0d1b1e; color: #e2e8f0; }
+body.theme-doctor { background-color: #0d1b1e; background-image: linear-gradient(rgba(13, 27, 30, 0.7), rgba(13, 27, 30, 0.9)), url('/bg/doctor.png'); color: #e2e8f0; }
 body.theme-doctor .reveal-text { color: #a3b899; }
 body.theme-doctor .role-text { color: #00f0ff; text-shadow: 0 0 15px rgba(0, 240, 255, 0.5); }
 
-body.theme-seer { background-color: #1a0b2e; color: #e2e8f0; }
+body.theme-seer { background-color: #1a0b2e; background-image: linear-gradient(rgba(26, 11, 46, 0.7), rgba(26, 11, 46, 0.9)), url('/bg/seer.png'); color: #e2e8f0; }
 body.theme-seer .reveal-text { color: #d8b4e2; }
 body.theme-seer .role-text { color: #a855f7; text-shadow: 0 0 15px rgba(168, 85, 247, 0.5); }
 
@@ -328,6 +331,7 @@ body.theme-villager .select-trigger.open {
 /* Day Phase Summary / Discussion */
 body.theme-day {
   background-color: #f8fafc;
+  background-image: linear-gradient(rgba(248, 250, 252, 0.5), rgba(248, 250, 252, 0.8)), url('/bg/day.png');
   color: #1e293b;
   animation: morningSunrise 2.5s forwards cubic-bezier(0.25, 1, 0.5, 1);
 }

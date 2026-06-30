@@ -99,16 +99,13 @@ export class GameManager {
     return this.roomCode;
   }
 
-  async assignRoles(werewolves, minions, doctors, seers, villagers) {
-    werewolves = Number(werewolves);
-    minions = Number(minions);
-    doctors = Number(doctors);
-    seers = Number(seers);
-    villagers = Number(villagers);
+  async assignRoles(werewolves, minions, doctors, seers, thieves, villagers) {
     const playerIds = Object.keys(this.players);
-    const totalRoles = werewolves + minions + doctors + seers + villagers;
-    if (playerIds.length !== totalRoles) {
-      throw new Error(`Role count (${totalRoles}) does not match player count (${playerIds.length})`);
+    const totalAssigned = werewolves + minions + doctors + seers + thieves + villagers;
+
+    if (totalAssigned !== playerIds.length) {
+      console.log(chalk.red(`Error: Assigned ${totalAssigned} roles for ${playerIds.length} players.`));
+      return;
     }
 
     let roles = [];
@@ -116,6 +113,7 @@ export class GameManager {
     for(let i=0; i<minions; i++) roles.push('minion');
     for(let i=0; i<doctors; i++) roles.push('doctor');
     for(let i=0; i<seers; i++) roles.push('seer');
+    for(let i=0; i<thieves; i++) roles.push('thief');
     for(let i=0; i<villagers; i++) roles.push('villager');
 
     // Shuffle
@@ -136,6 +134,10 @@ export class GameManager {
       if (roles[i] === 'minion') {
         privateData.werewolves = wolfIds;
       }
+      if (roles[i] === 'thief') {
+        privateData.stolenRole = null;
+        privateData.stolenFrom = null;
+      }
       batch.update(privRef, privateData);
       batch.update(pubRef, { isAlive: true });
     });
@@ -154,8 +156,11 @@ export class GameManager {
 
     Object.values(this.players).forEach(p => {
       if (p.isAlive) {
-        if (p.role === 'werewolf') aliveWolves++;
-        else if (p.role === 'minion') aliveMinions++;
+        let effectiveRole = p.role;
+        if (effectiveRole === 'thief' && p.stolenRole) effectiveRole = p.stolenRole;
+
+        if (effectiveRole === 'werewolf') aliveWolves++;
+        else if (effectiveRole === 'minion') aliveMinions++;
         else aliveTown++;
       }
     });
@@ -187,21 +192,60 @@ export class GameManager {
 
     // Update room
     const roomRef = db.collection("rooms").doc(this.roomCode);
-    batch.update(roomRef, { state: 'night' });
+    batch.update(roomRef, { state: 'night', dayNumber: this.dayNumber });
 
     await batch.commit();
     this.state = 'night';
   }
 
   async endNight() {
+    let thiefId = null;
+    let thiefTarget = null;
+    
+    // Process Thief on Night 1
+    if (this.dayNumber === 1) {
+      Object.entries(this.actions).forEach(([playerId, action]) => {
+        const player = this.players[playerId];
+        if (player && player.role === 'thief') {
+          thiefId = playerId;
+          thiefTarget = action.target;
+        }
+      });
+
+      if (thiefId && thiefTarget) {
+        const targetRole = this.players[thiefTarget].role;
+        this.players[thiefId].stolenRole = targetRole;
+        this.players[thiefId].stolenFrom = thiefTarget;
+        
+        await db.collection("rooms").doc(this.roomCode).collection("private").doc(thiefId).update({
+          stolenRole: targetRole,
+          stolenFrom: thiefTarget,
+          thiefResult: `You stole the identity of ${this.players[thiefTarget].name}. They are a ${targetRole}. You will now play as the ${targetRole}.`
+        });
+      }
+    }
+
+    // Filter out actions from victims, and map thief to their stolen role
     let werewolfTargets = [];
     let doctorTarget = null;
 
     Object.entries(this.actions).forEach(([playerId, action]) => {
       const player = this.players[playerId];
-      if (player && player.role === 'werewolf') {
+      
+      // Is this player a victim whose role was stolen?
+      const thiefWhoStole = Object.values(this.players).find(p => p.role === 'thief' && p.stolenFrom === playerId);
+      if (thiefWhoStole && this.dayNumber > 1) {
+        return; // Silently ignore the victim's action
+      }
+
+      let effectiveRole = player.role;
+      if (effectiveRole === 'thief' && player.stolenRole && this.dayNumber > 1) {
+        effectiveRole = player.stolenRole;
+      }
+
+      if (effectiveRole === 'werewolf') {
         werewolfTargets.push(action.target);
-      } else if (player && player.role === 'doctor') {
+      } else if (effectiveRole === 'doctor') {
         doctorTarget = action.target;
       }
     });
@@ -236,7 +280,8 @@ export class GameManager {
 
     await db.collection("rooms").doc(this.roomCode).update({
       state: 'day',
-      events: events
+      events: events,
+      dayNumber: this.dayNumber
     });
     this.state = 'day';
     this.dayNumber++;

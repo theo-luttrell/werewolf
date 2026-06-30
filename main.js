@@ -277,25 +277,38 @@ function handleState(data) {
     }
 
     const playersArr = Object.entries(gameState.players || {}).map(([id, p]) => ({id, ...p}));
-    if (currentRole === 'werewolf') {
+    
+    let effectiveRole = currentRole;
+    if (currentRole === 'thief' && gameState.privateData?.stolenRole && data.dayNumber > 1) {
+      effectiveRole = gameState.privateData.stolenRole;
+    }
+
+    if (effectiveRole === 'werewolf') {
       render(views.nightWerewolf(playersArr, playerId, gameState.actions), 'theme-werewolf');
       attachDropdown((targetId) => submitAction(targetId));
-    } else if (currentRole === 'minion') {
+    } else if (effectiveRole === 'minion') {
       const wolfIds = gameState.privateData?.werewolves || [];
       const wolfNames = wolfIds.map(id => gameState.players[id]?.name || 'Unknown Wolf');
       render(views.nightMinion(wolfNames), 'theme-minion');
-    } else if (currentRole === 'doctor') {
+    } else if (effectiveRole === 'doctor') {
       render(views.nightDoctor(playersArr, playerId), 'theme-doctor');
       attachDropdown((targetId) => submitAction(targetId));
-    } else if (currentRole === 'seer') {
+    } else if (effectiveRole === 'seer') {
       render(views.nightSeer(playersArr, playerId), 'theme-seer');
       attachDropdown((targetId) => submitAction(targetId));
+    } else if (effectiveRole === 'thief' && data.dayNumber === 1) {
+      render(views.nightThief(playersArr, playerId), 'theme-thief');
+      attachDropdown((targetId) => submitAction(targetId));
     } else {
-      render(views.nightVillager(), 'theme-villager');
+      render(views.nightVillager(), effectiveRole === 'thief' ? 'theme-thief' : 'theme-villager');
     }
   }
   else if (data.state === 'day') {
-    render(views.day(data.events || []), 'theme-day');
+    let events = data.events ? [...data.events] : [];
+    if (currentRole === 'thief' && gameState.privateData?.thiefResult && data.dayNumber === 2) {
+      events = [`<span style="color: #10b981;">[Thief Update]</span> ${gameState.privateData.thiefResult}`, ...events];
+    }
+    render(views.day(events), 'theme-day');
   }
   else if (data.state === 'discussion') {
     render(views.discussion(), 'theme-day');

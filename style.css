@@ -184,6 +184,10 @@ body.theme-seer { background-color: #1a0b2e; background-image: linear-gradient(r
 body.theme-seer .reveal-text { color: #d8b4e2; }
 body.theme-seer .role-text { color: #a855f7; text-shadow: 0 0 15px rgba(168, 85, 247, 0.5); }
 
+body.theme-thief { background-color: #0b1a14; background-image: linear-gradient(rgba(11, 26, 20, 0.75), rgba(11, 26, 20, 0.95)), url('/bg/thief.png'); color: #e2e8f0; }
+body.theme-thief .reveal-text { color: #94a3b8; }
+body.theme-thief .role-text { color: #10b981; text-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
+
 /* Night Phase UI */
 .night-container {
   text-align: center;
@@ -200,6 +204,7 @@ body.theme-minion .moon-icon { color: #ef4444; text-shadow: 0 0 20px rgba(239, 6
 body.theme-doctor .moon-icon { color: #00f0ff; text-shadow: 0 0 20px rgba(0, 240, 255, 0.3); }
 body.theme-seer .moon-icon { color: #a855f7; text-shadow: 0 0 20px rgba(168, 85, 247, 0.3); }
 body.theme-villager .moon-icon { color: #ffd700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.4); }
+body.theme-thief .moon-icon { color: #10b981; text-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
 
 .night-title {
   font-size: 28px;
@@ -251,7 +256,12 @@ body.theme-seer .select-trigger.open {
 }
 body.theme-villager .select-trigger.open {
   border-color: #ffd700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+body.theme-thief .select-trigger.open {
+  border-color: #10b981;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
 }
 .arrow-icon {
   border: solid #9ca3af;

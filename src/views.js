@@ -136,6 +136,35 @@ export const views = {
     `;
   },
 
+  nightThief: (players, currentPlayerId) => {
+    const options = players.map((p, i) => {
+      const delay = (i % 5) + 1;
+      if (p.id === currentPlayerId) {
+        return `<div class="option-item disabled stagger-${delay}"><span>${p.name} (You)</span></div>`;
+      }
+      if (!p.isAlive) {
+        return `<div class="option-item disabled stagger-${delay}"><span>${p.name}</span><span class="status-badge dead">Dead</span></div>`;
+      }
+      return `<div class="option-item targetable stagger-${delay}" data-id="${p.id}"><span>${p.name}</span></div>`;
+    }).join('');
+
+    return `
+      <div class="night-container animate-fade-in">
+          <div class="moon-icon float-anim" style="width:40px;height:40px;margin: 0 auto 10px auto;">${icons.moon}</div>
+          <h1 class="night-title">Night Phase</h1>
+          <p class="night-subtitle">Thief, choose a player whose role you will steal:</p>
+          <div class="custom-select-wrapper stagger-1">
+              <div class="select-trigger" id="dropdownTrigger">
+                  <span id="selectedValue">Select Player...</span>
+                  <div class="arrow-icon"></div>
+              </div>
+              <div class="select-options" id="dropdownOptions">${options}</div>
+          </div>
+          <button class="submit-btn stagger-2" id="nightSubmit" style="margin-top:20px; display:none;">Submit Steal</button>
+      </div>
+    `;
+  },
+
   nightSeer: (players, currentPlayerId) => {
     const options = players.map((p, i) => {
       const delay = (i % 5) + 1;

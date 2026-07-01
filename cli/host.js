@@ -1,5 +1,7 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
+import fs from 'fs';
+import { exec } from 'child_process';
 import { GameManager } from './gameManager.js';
 
 const gm = new GameManager();
@@ -39,6 +41,42 @@ async function main() {
           console.log(chalk.dim(`\n[Update] Player count is now: ${Object.keys(players).length}`));
         });
         console.log(chalk.bgBlue.white(` ROOM OPEN `) + ` Code: ` + chalk.bold.green(code));
+      }
+      else if (cmd === 'game open test') {
+        const { numPlayers } = await inquirer.prompt([{
+          type: 'number',
+          name: 'numPlayers',
+          message: 'How many players to simulate?',
+          default: 5
+        }]);
+
+        const code = await gm.openGame((players) => {
+          console.log(chalk.dim(`\n[Update] Player count is now: ${Object.keys(players).length}`));
+        });
+        console.log(chalk.bgBlue.white(` ROOM OPEN `) + ` Code: ` + chalk.bold.green(code));
+
+        let iframes = '';
+        for (let i = 1; i <= numPlayers; i++) {
+          iframes += `        <iframe src="/?test=1&roomCode=${code}&autoJoin=Player${i}"></iframe>\n`;
+        }
+
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Werewolf Test Grid</title>
+    <style>
+        body { margin: 0; padding: 0; background: #1a1a2e; display: flex; flex-wrap: wrap; height: 100vh; overflow: auto; }
+        iframe { flex: 1 1 calc(33.33% - 10px); min-width: 320px; min-height: 700px; border: 2px solid #333; margin: 5px; box-sizing: border-box; background: white; }
+    </style>
+</head>
+<body>
+${iframes}
+</body>
+</html>`;
+        fs.writeFileSync('./public/test.html', html);
+        console.log(chalk.green(`Generated test grid for ${numPlayers} players.`));
+        exec('open http://localhost:5173/test.html');
       }
       else if (cmd === 'game roles') {
         if (!gm.roomCode) {

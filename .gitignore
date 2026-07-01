@@ -23,4 +23,5 @@ dist-ssr
 *.sln
 *.sw?
 
+serviceAccountKey.jsonpublic/test.html
 serviceAccountKey.json

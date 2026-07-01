@@ -53,13 +53,13 @@ export const views = {
     </div>
   `,
 
-  nightWerewolf: (players, currentPlayerId, actions) => {
+  nightWerewolf: (players, currentPlayerId, actions, wolfIds = []) => {
     const options = players.map((p, i) => {
       const delay = (i % 5) + 1;
       if (p.id === currentPlayerId) {
         return `<div class="option-item disabled stagger-${delay}"><span>${p.name} (You)</span></div>`;
       }
-      if (p.role === 'werewolf') {
+      if (wolfIds.includes(p.id)) {
         return `<div class="option-item disabled stagger-${delay}"><span>${p.name}</span><span class="status-badge werewolf">Wolf</span></div>`;
       } else if (!p.isAlive) {
         return `<div class="option-item disabled stagger-${delay}"><span>${p.name}</span><span class="status-badge dead">Dead</span></div>`;
@@ -73,7 +73,7 @@ export const views = {
       Object.entries(actions).forEach(([actId, act]) => {
         if (actId !== currentPlayerId) {
           const actor = players.find(x => x.id === actId);
-          if (actor && actor.role === 'werewolf') {
+          if (actor) {
             const targetName = players.find(x => x.id === act.target)?.name || 'Unknown';
             wolfTargets.push(`<div style="font-size: 14px; margin-top: 8px; color: #ffcccc; display:flex; align-items:center; gap:6px;">
                 <div style="width:16px;height:16px;">${icons.werewolf}</div> ${actor.name} is targeting ${targetName}

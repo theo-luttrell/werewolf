@@ -87,7 +87,11 @@ export class GameManager {
       if (newActionCount > 0) {
         let werewolfActions = {};
         for (const [id, act] of Object.entries(this.actions)) {
-          if (this.players[id] && this.players[id].role === 'werewolf') {
+          let effectiveRole = this.players[id]?.role;
+          if (effectiveRole === 'thief' && this.players[id]?.stolenRole) {
+            effectiveRole = this.players[id].stolenRole;
+          }
+          if (effectiveRole === 'werewolf') {
             werewolfActions[id] = act;
           }
         }
@@ -131,7 +135,7 @@ export class GameManager {
       const pubRef = db.collection("rooms").doc(this.roomCode).collection("players").doc(id);
       
       let privateData = { role: roles[i], target: null, seerResult: null };
-      if (roles[i] === 'minion') {
+      if (roles[i] === 'minion' || roles[i] === 'werewolf') {
         privateData.werewolves = wolfIds;
       }
       if (roles[i] === 'thief') {

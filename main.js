@@ -1,7 +1,7 @@
 import './style.css';
 import { db, auth } from './firebase.js';
 import { doc, collection, onSnapshot, setDoc } from 'firebase/firestore';
-import { signInAnonymously, setPersistence, browserSessionPersistence } from 'firebase/auth';
+import { signInAnonymously, setPersistence, browserSessionPersistence, inMemoryPersistence } from 'firebase/auth';
 import { views } from './src/views.js';
 import { audio } from './src/audio.js';
 
@@ -15,9 +15,14 @@ document.addEventListener('click', (e) => {
   }
 });
 
+const urlParams = new URLSearchParams(window.location.search);
+const isTestMode = urlParams.get('test') === '1';
+const autoJoinName = urlParams.get('autoJoin');
+const urlRoomCode = urlParams.get('roomCode');
+
 // Local client state
-let roomCode = sessionStorage.getItem('ww_roomCode') || '';
-let playerId = sessionStorage.getItem('ww_playerId') || '';
+let roomCode = isTestMode ? urlRoomCode : (sessionStorage.getItem('ww_roomCode') || '');
+let playerId = isTestMode ? '' : (sessionStorage.getItem('ww_playerId') || '');
 let currentRole = '';
 let isAlive = true;
 
@@ -111,24 +116,24 @@ function showNickname() {
   render(views.nickname());
   const btn = document.getElementById('nicknameSubmit');
   const input = document.getElementById('nicknameInput');
-  btn.onclick = async () => {
-    const name = input.value.trim();
+  
+  const performJoin = async (name) => {
     if (name) {
       try {
-        await setPersistence(auth, browserSessionPersistence);
+        const persistence = isTestMode ? inMemoryPersistence : browserSessionPersistence;
+        await setPersistence(auth, persistence);
         await signInAnonymously(auth);
         playerId = auth.currentUser.uid;
-        sessionStorage.setItem('ww_playerId', playerId);
+        
+        if (!isTestMode) {
+          sessionStorage.setItem('ww_playerId', playerId);
+        }
         
         const rRef = doc(db, "rooms", roomCode, "players", playerId);
-        await setDoc(rRef, {
-          name, isAlive: true
-        }, { merge: true });
+        await setDoc(rRef, { name, isAlive: true }, { merge: true });
 
         const privRef = doc(db, "rooms", roomCode, "private", playerId);
-        await setDoc(privRef, {
-          role: 'unassigned', target: null
-        }, { merge: true });
+        await setDoc(privRef, { role: 'unassigned', target: null }, { merge: true });
 
         listenToRoom();
       } catch (err) {
@@ -136,6 +141,12 @@ function showNickname() {
       }
     }
   };
+
+  if (isTestMode && autoJoinName) {
+    performJoin(autoJoinName);
+  } else {
+    btn.onclick = () => performJoin(input.value.trim());
+  }
 }
 
 function listenToRoom() {
@@ -171,8 +182,13 @@ function listenToRoom() {
       currentRole = data.role;
       gameState.privateData = data;
       
+      let effectiveRole = currentRole;
+      if (currentRole === 'thief' && data.stolenRole) {
+         effectiveRole = data.stolenRole;
+      }
+      
       // Werewolf Vision Sync
-      if (currentRole === 'werewolf' && !werewolfUnsub) {
+      if (effectiveRole === 'werewolf' && !werewolfUnsub) {
         werewolfUnsub = onSnapshot(doc(db, "rooms", roomCode, "werewolfData", "actions"), (wSnap) => {
           const wData = wSnap.data();
           if (wData) {
@@ -284,7 +300,8 @@ function handleState(data) {
     }
 
     if (effectiveRole === 'werewolf') {
-      render(views.nightWerewolf(playersArr, playerId, gameState.actions), 'theme-werewolf');
+      const wolfIds = gameState.privateData?.werewolves || [];
+      render(views.nightWerewolf(playersArr, playerId, gameState.actions, wolfIds), 'theme-werewolf');
       attachDropdown((targetId) => submitAction(targetId));
     } else if (effectiveRole === 'minion') {
       const wolfIds = gameState.privateData?.werewolves || [];
@@ -394,6 +411,11 @@ auth.onAuthStateChanged((user) => {
   if (user && roomCode && playerId === user.uid) {
     listenToRoom();
   } else {
-    showLogin();
+    if (isTestMode && urlRoomCode && autoJoinName) {
+      roomCode = urlRoomCode;
+      showNickname();
+    } else {
+      showLogin();
+    }
   }
 });
